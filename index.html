@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Justus Matrix to Identity</title>
+</head>
+<body>
+    <div class="content">
+        <div>
+            <h1>Justus Matrix Solver</h1>
+            <p>This solves the matrix and also get its determinant in a humanistic way</p>
+        </div>
+        <div>
+            <p>Matrix Size: <input type="number" name="input-size" id="input-size"></p>
+        </div>
+        <div id="matrix-input">
+        </div>
+        <div>
+            <button id="solve-to-identity">Solve to Identity</button>
+        </div>
+        <div id="Solution">
+        </div>
+
+    </div>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="matrix.js"></script>
+    <script>
+        //this section builds the input matrix
+        let mtx_size_input = document.getElementById('input-size');
+        mtx_size_input.addEventListener('input', () =>{
+            mtx_size = mtx_size_input.value;
+            let newArray = '';
+
+            for(let i = 0; i < mtx_size; i++){
+                newArray += '<div id="R'+i+'">';
+                for(let j = 0; j < mtx_size; j++){
+                    newArray += '<input type="number" class="matrix-input" row="'+i+'" col="'+j+'"></input>';
+                }
+                newArray += '</div>';
+            }
+
+            let mtx_input = document.getElementById('matrix-input');
+            mtx_input.innerHTML = newArray;
+        });
+
+        //this section gets the values of input and runs it through the solver
+        let solution = document.getElementById("Solution");
+        document.getElementById('solve-to-identity').addEventListener('click', () =>{
+            let mtx_input = document.getElementById('matrix-input');
+            let n_rows = mtx_input.children.length;
+            let n_columns = mtx_input.children[0].children.length;
+
+            let input_matrix = new Array(n_rows).fill(0).map(() => new Array(n_columns).fill(0));
+            
+            for(let i = 0; i < n_rows; i++){
+                for(let j = 0; j < n_columns; j++){
+                    console.log(mtx_input.children[i].children[j].value);
+                    input_matrix[i][j] = mtx_input.children[i].children[j].valueAsNumber;
+                }
+            }
+            
+            let myMatrix = new Matrix(3, true);
+            myMatrix.matrix = input_matrix;
+            let mtxSolution = myMatrix.solve()
+
+            solution.innerText = 'Determinant: '+mtxSolution.determinant+'\n'+mtxSolution.steps;
+            MathJax.typeset()
+            
+        });
+
+    </script>
+</body>
+</html>

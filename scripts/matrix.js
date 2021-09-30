@@ -127,7 +127,89 @@ class Matrix {
         return mathMatrix;
     }
 
-    solve() {
+    human_solve() {
+        let determinant = this.determinant(this.matrix);
+        if (determinant === 0) {
+            this.matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+            return 'Error matrix has no determinant';
+        }
+        else {
+            //step 2, give it structure
+            let solution = '';
+            let steps = '$$\n Start:';
+            steps += this.mathJax();
+            steps += "\n$$\n"
+
+            for (let i = 0; i < this.matrix[0].length; i++) {
+                //if that position is not already 1, make it 1
+                if (this.matrix[i][i] !== 1) {
+                    //check if any in that column are == to 1 that can be swapped
+                    var next = false;
+                    for (let j = i + 1; j < this.matrix[0].length; j++) {
+                        if (this.matrix[j][i] === 1) {
+                            solution += `S,${i},${j};`;
+                            steps += `$$\nR${i+1} <=> R${j+1}:` + this.mathJax() + '=>';
+                            this.switchRows(i, j);
+                            steps += this.mathJax() + '\n$$\n';
+                            next = true;
+                            break;
+                        }
+                    }
+
+                    // if no rows could be swapped, check if any could be multiplied evenly to make the target = 1
+                    if (!next) {
+                        for (let j = i + 1; j < this.matrix[0].length; j++) {
+                            let target = this.matrix[i][i] - 1;
+
+                            if (target % this.matrix[j][i] === 0) {
+                                solution += `MA,${-(target / this.matrix[j][i])},${j},${i};`;
+                                steps += `$$\n${-(target / this.matrix[j][i])}R${j+1} + R${i+1} = R${i+1}: ` + this.mathJax() + '=>';
+                                this.multiplyAndAddRow(-(target / this.matrix[j][i]), j, i);
+                                steps += this.mathJax() + '\n$$\n';
+                                break;
+                            }
+                        }
+                    }
+                }
+                // loop through the column and check if each other element is 0, if not, make it so.
+                for (let j = 0; j < this.matrix[0].length; j++) {
+                    if (j != i && this.matrix[j][i] != 0) {
+                        let target = -this.matrix[j][i];
+                        if (target % this.matrix[i][i] === 0) {
+                        // if (true) {
+                            steps += `$$\n${target / this.matrix[i][i]}R${i+1} + R${j+1} = R${j+1}: ` + this.mathJax() + '=>';
+                            solution += `MA,${target / this.matrix[i][i]},${i},${j};`;
+                            this.multiplyAndAddRow((target / this.matrix[i][i]), i, j);
+                        }
+                        else {
+                            steps += `$$\n${-this.matrix[j][i]}R${i+1} + ${this.matrix[i][i]}R${j+1} = R${j+1}: ` + this.mathJax() + '=>';
+                            solution += `MMA,${-this.matrix[j][i]},${this.matrix[i][i]},${i},${j};`;
+                            this.MAMA(-this.matrix[j][i], this.matrix[i][i], i, j);
+                        }
+                        steps += this.mathJax() + '\n$$\n';
+                    }
+                }
+
+
+            }
+            // Step 3, loop through and check if the final form is 1, else multiply to get there.
+            for (let i = 0; i < this.matrix[0].length; i++) {
+                if (this.matrix[i][i] != 1) {
+                    solution += `M,${1 / this.matrix[i][i]},${i};`;
+                    steps += `$$\n${(1 / this.matrix[i][i])}R${i+1} = R${i+1}: ` + this.mathJax() + '=>';
+                    this.multiplyRow((1 / this.matrix[i][i]), i);
+                    steps += this.mathJax() + '\n$$\n';
+                }
+            }
+            return {
+                solution: solution,
+                steps: steps,
+                determinant: determinant
+            }
+        }
+    }
+
+    robo_solve() {
         let determinant = this.determinant(this.matrix);
         if (determinant === 0) {
             this.matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -175,16 +257,9 @@ class Matrix {
                 for (let j = 0; j < this.matrix[0].length; j++) {
                     if (j != i && this.matrix[j][i] != 0) {
                         let target = -this.matrix[j][i];
-                        if (target % this.matrix[i][i] === 0) {
-                            steps += `$$\n${target / this.matrix[i][i]}R${i+1} + R${j+1} = R${j+1}: ` + this.mathJax() + '=>';
-                            solution += `MA${target / this.matrix[i][i]},${i},${j};`;
-                            this.multiplyAndAddRow((target / this.matrix[i][i]), i, j);
-                        }
-                        else {
-                            steps += `$$\n${-this.matrix[j][i]}R${i+1} + ${this.matrix[i][i]}R${j+1} = R${j+1}: ` + this.mathJax() + '=>';
-                            solution += `MMA${-this.matrix[j][i]},${this.matrix[i][i]},${i},${j};`;
-                            this.MAMA(-this.matrix[j][i], this.matrix[i][i], i, j);
-                        }
+                        steps += `$$\n${target / this.matrix[i][i]}R${i+1} + R${j+1} = R${j+1}: ` + this.mathJax() + '=>';
+                        solution += `MA${target / this.matrix[i][i]},${i},${j};`;
+                        this.multiplyAndAddRow((target / this.matrix[i][i]), i, j);
                         steps += this.mathJax() + '\n$$\n';
                     }
                 }
@@ -208,4 +283,43 @@ class Matrix {
         }
     }
 
+    //apply generated steps to the matrix
+    applySteps(solution){
+        //MA,-1,0,2;S,1,2;MA,2,1,0;MA,-2,1,2;MMA,1,5,2,0;MMA,2,5,2,1;M,0.2,0;M,0.2,1;M,0.2,2;
+        
+        //stp 1: break the string into parts delimited by the ';'
+        solution = solution.split(';');
+
+        //stp 2: break the strings into a multi dimentional array delimited by ','
+        solution.forEach((step, stp_num) => {
+            solution[stp_num] = step.split(',');
+        });
+
+        //process each row as input steps applied to a matrix showing steps along the way
+        solution.forEach(step => {
+            switch(step[0]){
+                case 'S':
+                    this.switchRows(step[1], step[2]);
+                    break;
+                case 'M':
+                    this.multiplyRow(step[1], step[2]);
+                    break;
+                case 'MA':
+                    this.multiplyAndAddRow(step[1], step[2], step[3]);
+                    break;
+                case 'MMA':
+                    this.MAMA(step[1], step[2], step[3], step[4]);
+                    break;
+            }
+        });
+
+    }
+
 }
+/*
+var X = [[1,-2,3],[0,2,1],[1,-1,1]];
+var X = [[1,0,0],[0,1,0],[0,0,1]];
+var newMatrix = new Matrix(3, true);
+newMatrix.matrix = X;
+newMatrix.applySteps('MA,-1,0,2;S,1,2;MA,2,1,0;MA,-2,1,2;MMA,1,5,2,0;MMA,2,5,2,1;M,0.2,0;M,0.2,1;M,0.2,2;');
+*/

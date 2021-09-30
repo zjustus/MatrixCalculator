@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Justus Matrix to Identity</title>
+</head>
+
+<body>
+    <div class="content">
+        <div>
+            <h1>Justus Matrix Solver</h1>
+            <p>This solves the matrix and also get its determinant in a humanistic way</p>
+            <p>1, -2, 3, 0, 2, 1, 1, -1, 1</p>
+        </div>
+        <div>
+            <p>Matrix Size: <input type="number" name="input-size" id="input-size"></p>
+        </div>
+        <div id="matrix-input">
+        </div>
+        <div id="Options">
+            <button id="robo-solve">Solve to Identity Like a robot</button>
+            <button id="humain-solve">Solve to Identitly Like a human</button>
+        </div>
+        <div id="Solution">
+        </div>
+
+    </div>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="scripts/matrix.js"></script>
+    <script>
+        //this section builds the input matrix
+        let mtx_size_input = document.getElementById('input-size');
+        let options = document.getElementById('Options');
+        let solution = document.getElementById("Solution");
+
+
+
+
+        mtx_size_input.addEventListener('input', () => {
+            mtx_size = mtx_size_input.value;
+            let newArray = '';
+
+            for (let i = 0; i < mtx_size; i++) {
+                newArray += '<div id="R' + i + '">';
+                for (let j = 0; j < mtx_size; j++) {
+                    newArray += '<input type="number" class="matrix-input" row="' + i + '" col="' + j + '"></input>';
+                }
+                newArray += '</div>';
+            }
+
+            let mtx_input = document.getElementById('matrix-input');
+            mtx_input.innerHTML = newArray;
+        });
+
+        document.getElementById('robo-solve').onclick = function(){
+            matrixSolve(getMatrix(), 0);
+        }
+        document.getElementById('humain-solve').onclick = function(){
+            matrixSolve(getMatrix(), 1);
+        }
+
+        //this function gets the matrix from the web page
+        function getMatrix() {
+            let mtx_input = document.getElementById('matrix-input');
+            let n_rows = mtx_input.children.length;
+            let n_columns = mtx_input.children[0].children.length;
+
+            let input_matrix = new Array(n_rows).fill(0).map(() => new Array(n_columns).fill(0));
+
+            for (let i = 0; i < n_rows; i++) {
+                for (let j = 0; j < n_columns; j++) {
+                    input_matrix[i][j] = mtx_input.children[i].children[j].valueAsNumber;
+                }
+            }
+
+            return input_matrix;
+        }
+        // this function runs the matrix solve method
+        // let input_matrix = the matrix to solve
+        // let method = [0, 1]: 0 = robo solve, 1 = human solve
+        function matrixSolve(input_matrix, method) {
+
+            let myMatrix = new Matrix(3, false);
+            myMatrix.matrix = input_matrix;
+
+            let mtxSolution;
+            if (method == 0) mtxSolution = myMatrix.robo_solve();
+            if (method == 1) mtxSolution = myMatrix.human_solve();
+
+            solution.innerText = 'Determinant: ' + mtxSolution.determinant + '\n' + mtxSolution.solution + '\n' + mtxSolution.steps;
+            MathJax.typeset();
+
+        }
+    </script>
+</body>
+
+</html>
